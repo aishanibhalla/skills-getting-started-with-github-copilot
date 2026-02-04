@@ -102,8 +102,6 @@ def test_signup_valid_email():
     activity = "Chess Club"
     
     # Test various valid email formats
-    # Note: emails with + signs won't work correctly with query parameters due to URL encoding
-    # + gets decoded as a space, which is correctly rejected
     valid_emails = [
         "newuser@mergington.edu",
         "user.name@mergington.edu",
@@ -128,3 +126,31 @@ def test_signup_valid_email():
         
         # Clean up - unregister the user
         client.post(f"/activities/{activity}/unregister", json={"email": email})
+
+
+def test_signup_with_plus_sign_properly_encoded():
+    """Test that emails with + signs work when properly URL-encoded"""
+    from urllib.parse import quote
+    
+    activity = "Chess Club"
+    # Email with plus sign (used for plus-addressing/subaddressing)
+    email = "user+tag@mergington.edu"
+    
+    # First unregister in case email exists
+    client.post(f"/activities/{activity}/unregister", json={"email": email})
+    
+    # Properly URL-encode the email (+ becomes %2B)
+    encoded_email = quote(email, safe='@')
+    
+    # Try to sign up with properly encoded email
+    response = client.post(f"/activities/{activity}/signup?email={encoded_email}")
+    
+    # Should succeed (200) or fail for reasons other than email format
+    assert response.status_code in [200, 400], f"Unexpected status code for {email}"
+    if response.status_code == 400:
+        # If it fails, it should NOT be due to email format
+        detail = response.json()["detail"]
+        assert "Invalid email format" not in detail, f"Email {email} incorrectly marked as invalid when properly URL-encoded"
+    
+    # Clean up - unregister the user
+    client.post(f"/activities/{activity}/unregister", json={"email": email})
