@@ -67,3 +67,138 @@ def test_unregister_nonexistent_activity():
     response = client.post(f"/activities/{activity}/unregister", json={"email": email})
     assert response.status_code == 404
     assert "Activity not found" in response.json()["detail"]
+def test_signup_invalid_email():
+    activity = "Chess Club"
+    
+    # Test empty email
+    response = client.post(f"/activities/{activity}/signup?email=")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no @)
+    response = client.post(f"/activities/{activity}/signup?email=invalidemail")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no domain)
+    response = client.post(f"/activities/{activity}/signup?email=invalid@")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no TLD)
+    response = client.post(f"/activities/{activity}/signup?email=invalid@domain")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (spaces)
+    response = client.post(f"/activities/{activity}/signup?email=invalid email@domain.com")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (consecutive dots)
+    response = client.post(f"/activities/{activity}/signup?email=user..name@domain.com")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (leading dot)
+    response = client.post(f"/activities/{activity}/signup?email=.user@domain.com")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (trailing dot)
+    response = client.post(f"/activities/{activity}/signup?email=user.@domain.com")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+
+
+def test_signup_valid_email():
+    activity = "Chess Club"
+    
+    # Test various valid email formats
+    valid_emails = [
+        "newuser@mergington.edu",
+        "user.name@mergington.edu",
+        "user_name@mergington.edu",
+        "user123@mergington.edu",
+        "a@mergington.edu",
+    ]
+    
+    for email in valid_emails:
+        # First unregister in case email exists
+        client.post(f"/activities/{activity}/unregister", json={"email": email})
+        
+        # Try to sign up with valid email
+        response = client.post(f"/activities/{activity}/signup?email={email}")
+        # Should succeed (200) or fail because already signed up (400) or activity full (400)
+        # but should NOT fail due to invalid email format
+        assert response.status_code in [200, 400], f"Unexpected status code for {email}"
+        if response.status_code == 400:
+            # If it fails, it should NOT be due to email format
+            detail = response.json()["detail"]
+            assert "Invalid email format" not in detail, f"Email {email} incorrectly marked as invalid"
+        
+        # Clean up - unregister the user
+        client.post(f"/activities/{activity}/unregister", json={"email": email})
+
+
+def test_signup_with_plus_sign_properly_encoded():
+    """Test that emails with + signs work when properly URL-encoded"""
+    from urllib.parse import quote
+    
+    activity = "Chess Club"
+    # Email with plus sign (used for plus-addressing/subaddressing)
+    email = "user+tag@mergington.edu"
+    
+    # First unregister in case email exists
+    client.post(f"/activities/{activity}/unregister", json={"email": email})
+    
+    # Properly URL-encode the email (+ becomes %2B)
+    encoded_email = quote(email, safe='@')
+    
+    # Try to sign up with properly encoded email
+    response = client.post(f"/activities/{activity}/signup?email={encoded_email}")
+    
+    # Should succeed (200) or fail for reasons other than email format
+    assert response.status_code in [200, 400], f"Unexpected status code for {email}"
+    if response.status_code == 400:
+        # If it fails, it should NOT be due to email format
+        detail = response.json()["detail"]
+        assert "Invalid email format" not in detail, f"Email {email} incorrectly marked as invalid when properly URL-encoded"
+    
+    # Clean up - unregister the user
+    client.post(f"/activities/{activity}/unregister", json={"email": email})
+def test_signup_when_activity_is_full():
+    """Test that signup is rejected when activity has reached maximum participants"""
+    # Use Chess Club which has max_participants: 12
+    activity = "Chess Club"
+    
+    # Get current participants
+    activities = client.get("/activities").json()
+    current_participants = activities[activity]["participants"].copy()
+    max_participants = activities[activity]["max_participants"]
+    
+    # Fill up the activity to maximum capacity
+    test_emails = []
+    spots_to_fill = max_participants - len(current_participants)
+    
+    for i in range(spots_to_fill):
+        email = f"testuser{i}@mergington.edu"
+        test_emails.append(email)
+        # Clean up in case email already exists
+        client.post(f"/activities/{activity}/unregister", json={"email": email})
+        response = client.post(f"/activities/{activity}/signup?email={email}")
+        assert response.status_code == 200
+    
+    # Verify activity is now full
+    activities = client.get("/activities").json()
+    assert len(activities[activity]["participants"]) == max_participants
+    
+    # Try to sign up one more person - should fail
+    overflow_email = "overflow@mergington.edu"
+    response = client.post(f"/activities/{activity}/signup?email={overflow_email}")
+    assert response.status_code == 400
+    assert "full" in response.json()["detail"].lower()
+    
+    # Clean up - remove test participants
+    for email in test_emails:
+        client.post(f"/activities/{activity}/unregister", json={"email": email})

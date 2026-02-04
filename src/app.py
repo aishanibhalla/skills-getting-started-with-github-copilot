@@ -5,11 +5,13 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 import os
 from pathlib import Path
+import re
 
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
@@ -78,6 +80,58 @@ activities = {
 }
 
 
+def validate_email(email: str) -> bool:
+    """Validate email format"""
+    if not email or not email.strip():
+        return False
+    
+    # Check for @ symbol
+    if '@' not in email or email.count('@') != 1:
+        return False
+    
+    local_part, domain = email.split('@')
+    
+    # Validate local part (before @)
+    if not local_part:
+        return False
+    # No leading or trailing dots
+    if local_part.startswith('.') or local_part.endswith('.'):
+        return False
+    # No consecutive dots
+    if '..' in local_part:
+        return False
+    # Only allowed characters
+    if not re.match(r'^[a-zA-Z0-9._%+-]+$', local_part):
+        return False
+    
+    # Validate domain part (after @)
+    if not domain:
+        return False
+    # Must have at least one dot for TLD
+    if '.' not in domain:
+        return False
+    # No leading or trailing dots or hyphens
+    if domain.startswith('.') or domain.endswith('.') or domain.startswith('-') or domain.endswith('-'):
+        return False
+    # No consecutive dots
+    if '..' in domain:
+        return False
+    # Ensure no individual domain label starts or ends with a hyphen
+    labels = domain.split('.')
+    for label in labels:
+        if not label:
+            return False
+        if label.startswith('-') or label.endswith('-'):
+            return False
+    # Only allowed characters and must end with valid TLD
+    if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+        return False
+    
+    return True
+class EmailRequest(BaseModel):
+    email: str
+
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/static/index.html")
@@ -92,6 +146,10 @@ def get_activities():
 @app.post("/activities/{activity_name}/signup")
 def signup_for_activity(activity_name: str, email: str):
     """Sign up a student for an activity"""
+    # Validate email format
+    if not validate_email(email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
     # Validate activity exists
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
@@ -111,13 +169,9 @@ def signup_for_activity(activity_name: str, email: str):
 
 
 # Unregister a participant from an activity
-from fastapi import Request
 @app.post("/activities/{activity_name}/unregister")
-async def unregister_from_activity(activity_name: str, request: Request):
-    data = await request.json()
-    email = data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
+def unregister_from_activity(activity_name: str, email_request: EmailRequest):
+    email = email_request.email
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
     activity = activities[activity_name]
