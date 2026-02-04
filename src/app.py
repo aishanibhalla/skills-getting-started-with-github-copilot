@@ -91,7 +91,7 @@ def validate_email(email: str) -> bool:
     local_part, domain = email.split('@')
     
     # Validate local part (before @)
-    if not local_part or len(local_part) == 0:
+    if not local_part:
         return False
     # No leading or trailing dots
     if local_part.startswith('.') or local_part.endswith('.'):
@@ -104,7 +104,7 @@ def validate_email(email: str) -> bool:
         return False
     
     # Validate domain part (after @)
-    if not domain or len(domain) == 0:
+    if not domain:
         return False
     # Must have at least one dot for TLD
     if '.' not in domain:
