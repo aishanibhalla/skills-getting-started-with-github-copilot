@@ -52,3 +52,32 @@ def test_unregister_not_found():
     response = client.post(f"/activities/{activity}/unregister", json={"email": email})
     assert response.status_code == 400
     assert "not registered" in response.json()["detail"]
+
+
+def test_signup_invalid_email():
+    activity = "Chess Club"
+    
+    # Test empty email
+    response = client.post(f"/activities/{activity}/signup?email=")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no @)
+    response = client.post(f"/activities/{activity}/signup?email=invalidemail")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no domain)
+    response = client.post(f"/activities/{activity}/signup?email=invalid@")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (no TLD)
+    response = client.post(f"/activities/{activity}/signup?email=invalid@domain")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
+    
+    # Test malformed email (spaces)
+    response = client.post(f"/activities/{activity}/signup?email=invalid email@domain.com")
+    assert response.status_code == 400
+    assert "Invalid email format" in response.json()["detail"]
