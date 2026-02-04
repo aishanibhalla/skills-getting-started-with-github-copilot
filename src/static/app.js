@@ -137,13 +137,43 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ email })
         }
       );
+
+      let result = null;
+      try {
+        result = await response.json();
+      } catch (e) {
+        // Response body is not JSON or empty; leave result as null.
+      }
+
       if (response.ok) {
+        const successMessage =
+          (result && (result.message || result.detail)) ||
+          "Participant unregistered successfully.";
+        messageDiv.textContent = successMessage;
+        messageDiv.className = "success";
+        messageDiv.classList.remove("hidden");
         fetchActivities();
       } else {
-        alert("Failed to unregister participant.");
+        const errorMessage =
+          (result && (result.detail || result.message)) ||
+          `Failed to unregister participant (status ${response.status}).`;
+        messageDiv.textContent = errorMessage;
+        messageDiv.className = "error";
+        messageDiv.classList.remove("hidden");
       }
+
+      // Hide message after 5 seconds
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 5000);
     } catch (error) {
-      alert("Error unregistering participant.");
+      messageDiv.textContent = "Error unregistering participant. Please try again.";
+      messageDiv.className = "error";
+      messageDiv.classList.remove("hidden");
+      console.error("Error unregistering participant:", error);
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 5000);
     }
   }
 
