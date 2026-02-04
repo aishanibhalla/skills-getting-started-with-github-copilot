@@ -20,7 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Participants section
+        // Set basic activity info first
+        activityCard.innerHTML = `
+          <h4>${name}</h4>
+          <p>${details.description}</p>
+          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+        `;
+
+        // Create and append participants section
         let participantsSection = document.createElement("div");
         participantsSection.className = "participants-section";
         const strong = document.createElement("strong");
@@ -61,12 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
           participantsSection.appendChild(noPart);
         }
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
         activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
