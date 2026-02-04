@@ -115,6 +115,13 @@ def validate_email(email: str) -> bool:
     # No consecutive dots
     if '..' in domain:
         return False
+    # Ensure no individual domain label starts or ends with a hyphen
+    labels = domain.split('.')
+    for label in labels:
+        if not label:
+            return False
+        if label.startswith('-') or label.endswith('-'):
+            return False
     # Only allowed characters and must end with valid TLD
     if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
         return False
