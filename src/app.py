@@ -5,9 +5,10 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 import os
 from pathlib import Path
 import re
@@ -127,6 +128,8 @@ def validate_email(email: str) -> bool:
         return False
     
     return True
+class EmailRequest(BaseModel):
+    email: str
 
 
 @app.get("/")
@@ -166,13 +169,9 @@ def signup_for_activity(activity_name: str, email: str):
 
 
 # Unregister a participant from an activity
-from fastapi import Request
 @app.post("/activities/{activity_name}/unregister")
-async def unregister_from_activity(activity_name: str, request: Request):
-    data = await request.json()
-    email = data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
+def unregister_from_activity(activity_name: str, email_request: EmailRequest):
+    email = email_request.email
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
     activity = activities[activity_name]

@@ -20,7 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Participants section
+        // Set basic activity info first
+        activityCard.innerHTML = `
+          <h4>${name}</h4>
+          <p>${details.description}</p>
+          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+        `;
+
+        // Create and append participants section
         let participantsSection = document.createElement("div");
         participantsSection.className = "participants-section";
         const strong = document.createElement("strong");
@@ -29,12 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (details.participants.length > 0) {
           const ul = document.createElement("ul");
-          ul.style.listStyleType = "none";
-          ul.style.paddingLeft = "0";
           details.participants.forEach(email => {
             const li = document.createElement("li");
-            li.style.display = "flex";
-            li.style.alignItems = "center";
             // Email span
             const span = document.createElement("span");
             span.textContent = email;
@@ -42,10 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const deleteBtn = document.createElement("button");
             deleteBtn.innerHTML = "🗑️";
             deleteBtn.title = "Unregister";
-            deleteBtn.style.marginLeft = "8px";
-            deleteBtn.style.background = "none";
-            deleteBtn.style.border = "none";
-            deleteBtn.style.cursor = "pointer";
             deleteBtn.onclick = async function() {
               await unregisterParticipant(name, email);
             };
@@ -61,12 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
           participantsSection.appendChild(noPart);
         }
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
         activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
