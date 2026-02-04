@@ -51,3 +51,40 @@ def test_unregister_not_found():
     response = client.post(f"/activities/{activity}/unregister", json={"email": email})
     assert response.status_code == 400
     assert "not registered" in response.json()["detail"]
+
+
+def test_signup_when_activity_is_full():
+    """Test that signup is rejected when activity has reached maximum participants"""
+    # Use Chess Club which has max_participants: 12
+    activity = "Chess Club"
+    
+    # Get current participants
+    activities = client.get("/activities").json()
+    current_participants = activities[activity]["participants"].copy()
+    max_participants = activities[activity]["max_participants"]
+    
+    # Fill up the activity to maximum capacity
+    test_emails = []
+    spots_to_fill = max_participants - len(current_participants)
+    
+    for i in range(spots_to_fill):
+        email = f"testuser{i}@mergington.edu"
+        test_emails.append(email)
+        # Clean up in case email already exists
+        client.post(f"/activities/{activity}/unregister", json={"email": email})
+        response = client.post(f"/activities/{activity}/signup?email={email}")
+        assert response.status_code == 200
+    
+    # Verify activity is now full
+    activities = client.get("/activities").json()
+    assert len(activities[activity]["participants"]) == max_participants
+    
+    # Try to sign up one more person - should fail
+    overflow_email = "overflow@mergington.edu"
+    response = client.post(f"/activities/{activity}/signup?email={overflow_email}")
+    assert response.status_code == 400
+    assert "full" in response.json()["detail"].lower()
+    
+    # Clean up - remove test participants
+    for email in test_emails:
+        client.post(f"/activities/{activity}/unregister", json={"email": email})
