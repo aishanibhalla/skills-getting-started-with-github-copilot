@@ -83,9 +83,43 @@ def validate_email(email: str) -> bool:
     """Validate email format"""
     if not email or not email.strip():
         return False
-    # Simple email regex pattern
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
+    
+    # Check for @ symbol
+    if '@' not in email or email.count('@') != 1:
+        return False
+    
+    local_part, domain = email.split('@')
+    
+    # Validate local part (before @)
+    if not local_part or len(local_part) == 0:
+        return False
+    # No leading or trailing dots
+    if local_part.startswith('.') or local_part.endswith('.'):
+        return False
+    # No consecutive dots
+    if '..' in local_part:
+        return False
+    # Only allowed characters
+    if not re.match(r'^[a-zA-Z0-9._%+-]+$', local_part):
+        return False
+    
+    # Validate domain part (after @)
+    if not domain or len(domain) == 0:
+        return False
+    # Must have at least one dot for TLD
+    if '.' not in domain:
+        return False
+    # No leading or trailing dots or hyphens
+    if domain.startswith('.') or domain.endswith('.') or domain.startswith('-') or domain.endswith('-'):
+        return False
+    # No consecutive dots
+    if '..' in domain:
+        return False
+    # Only allowed characters and must end with valid TLD
+    if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+        return False
+    
+    return True
 
 
 @app.get("/")
