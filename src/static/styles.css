@@ -157,17 +157,34 @@ footer {
   margin-bottom: 6px;
 }
 
+
 .participants-section ul {
-  margin-left: 18px;
+  margin-left: 0;
   margin-bottom: 0;
   padding-left: 0;
-  list-style-type: disc;
+  list-style-type: none;
 }
 
 .participants-section li {
   font-size: 15px;
   color: #333;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+}
+
+/* Style for delete (unregister) button in participant list */
+.participants-section button {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #c62828;
+  transition: color 0.2s;
+}
+.participants-section button:hover {
+  color: #b71c1c;
 }
 
 .no-participants {
