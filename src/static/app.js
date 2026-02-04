@@ -29,12 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (details.participants.length > 0) {
           const ul = document.createElement("ul");
-          ul.style.listStyleType = "none";
-          ul.style.paddingLeft = "0";
           details.participants.forEach(email => {
             const li = document.createElement("li");
-            li.style.display = "flex";
-            li.style.alignItems = "center";
             // Email span
             const span = document.createElement("span");
             span.textContent = email;
@@ -42,10 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const deleteBtn = document.createElement("button");
             deleteBtn.innerHTML = "🗑️";
             deleteBtn.title = "Unregister";
-            deleteBtn.style.marginLeft = "8px";
-            deleteBtn.style.background = "none";
-            deleteBtn.style.border = "none";
-            deleteBtn.style.cursor = "pointer";
             deleteBtn.onclick = async function() {
               await unregisterParticipant(name, email);
             };
