@@ -51,3 +51,19 @@ def test_unregister_not_found():
     response = client.post(f"/activities/{activity}/unregister", json={"email": email})
     assert response.status_code == 400
     assert "not registered" in response.json()["detail"]
+
+
+def test_signup_nonexistent_activity():
+    activity = "Nonexistent Club"
+    email = "student@mergington.edu"
+    response = client.post(f"/activities/{activity}/signup?email={email}")
+    assert response.status_code == 404
+    assert "Activity not found" in response.json()["detail"]
+
+
+def test_unregister_nonexistent_activity():
+    activity = "Nonexistent Club"
+    email = "student@mergington.edu"
+    response = client.post(f"/activities/{activity}/unregister", json={"email": email})
+    assert response.status_code == 404
+    assert "Activity not found" in response.json()["detail"]
